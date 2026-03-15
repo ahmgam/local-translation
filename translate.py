@@ -7,7 +7,7 @@ import requests
 # Constants for Ollama API
 OLLAMA_URL = "http://localhost:11434"
 TRANSLATION_MODEL = "translategemma:12b"
-SUMMARIZATION_MODEL = "llama3"
+SUMMARIZATION_MODEL = "llama3.1:8b"
 
 
 def summarize_text(text: str) -> str:
@@ -60,7 +60,8 @@ def translate_text(text: str, target_lang: str, summary: str = "") -> str:
     - Output ONLY the translated text.
     - Do NOT include explanations, notes, comments, or the original text.
     - If a word or phrase has multiple possible translations, choose the single most natural and contextually appropriate translation.
-
+    - Keep the formatting of the original text (e.g., markdown syntax) intact in the translation.
+    - do NOT attempt to translate code snippets, URLs, or any text that appears to be a code block. Instead, preserve them exactly as they are.
     Text to translate:
     {text}
     """
