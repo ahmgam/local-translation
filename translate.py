@@ -7,23 +7,59 @@ import requests
 # Constants for Ollama API
 OLLAMA_URL = "http://localhost:11434"
 TRANSLATION_MODEL = "translategemma:12b"
+SUMMARIZATION_MODEL = "llama3"
 
 
-def translate_text(text: str, target_lang: str) -> str:
+def summarize_text(text: str) -> str:
+    """Summarize *text* using Ollama."""
+    prompt = f"""Summarize the following text concisely. Focus on the main topics, key points, and overall context.
+
+Text to summarize:
+{text}
+"""
+    try:
+        response = requests.post(
+            f"{OLLAMA_URL}/api/generate",
+            json={"model": SUMMARIZATION_MODEL, "prompt": prompt, "stream": False},
+            timeout=120,
+        )
+        response.raise_for_status()
+        try:
+            result = response.json()
+            return result.get("response", "")
+        except ValueError:
+            try:
+                parsed = json.loads(response.text)
+                return parsed.get("response", "")
+            except json.JSONDecodeError:
+                return ""
+    except Exception as e:
+        print(f"[ERROR] Summarization error: {e}")
+        return ""
+
+
+def translate_text(text: str, target_lang: str, summary: str = "") -> str:
     """Translate *text* into *target_lang* using Ollama."""
     # Skip translation for empty or whitespace-only lines to avoid unnecessary API calls
     if not text.strip():
         return text
     prompt = f"""You are a professional translator.
 
+    Context:
+    The following summary describes the content and context of the file being translated. Use it only to better understand the meaning of the text and produce a more accurate translation.
+
+    Summary:
+    {summary}
+
     Task:
     Translate the provided text into: {target_lang}.
 
     Rules:
+    - Use the summary only as contextual guidance.
+    - Translate the text faithfully while preserving the intended meaning.
     - Output ONLY the translated text.
     - Do NOT include explanations, notes, comments, or the original text.
     - If a word or phrase has multiple possible translations, choose the single most natural and contextually appropriate translation.
-    - Maintain the original meaning and tone as accurately as possible.
 
     Text to translate:
     {text}
@@ -88,6 +124,10 @@ def main():
     with open(args.file_path, "r", encoding="utf-8") as f:
         content = f.read()
 
+    print("Summarizing content...")
+    summary = summarize_text(content)
+    print(f"Summary: {summary[:200]}...")
+
     lines = content.splitlines()
 
     if len(lines) == 0:
@@ -108,7 +148,7 @@ def main():
                 f.write("\n")
                 f.flush()
                 continue
-            translated_line = translate_text(stripped, args.target_lang)
+            translated_line = translate_text(stripped, args.target_lang, summary)
             if not translated_line:
                 translated_line = stripped
             f.write(translated_line + "\n")
