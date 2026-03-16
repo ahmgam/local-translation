@@ -3,11 +3,15 @@ import json
 import os
 import sys
 import requests
+from dotenv import load_dotenv
 
-# Constants for Ollama API
-OLLAMA_URL = "http://localhost:11434"
-TRANSLATION_MODEL = "translategemma:12b"
-SUMMARIZATION_MODEL = "llama3.1:8b"
+# Load environment variables from .env file
+load_dotenv()
+
+# Constants for Ollama API (with defaults from .env or current values)
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
+TRANSLATION_MODEL = os.getenv("TRANSLATION_MODEL", "translategemma:12b")
+SUMMARIZATION_MODEL = os.getenv("SUMMARIZATION_MODEL", "llama3.1:8b")
 
 
 def summarize_text(text: str) -> str:
